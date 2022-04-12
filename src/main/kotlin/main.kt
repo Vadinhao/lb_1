@@ -1,59 +1,66 @@
+import entities.base.BaseFork
+import entities.base.BasePhilosopher
 import kotlinx.coroutines.*
-import kotlin.concurrent.thread
+import runners.BaseRunner
+import java.awt.SystemColor
 
 fun main() {
-
-
-    runBlocking {
-        println("start")
-        launch {
-            println("async work started...")
-            delay(200)
-            println("async work done!")
-        }
-        println("end")
-    }
-
-
-    /*
-    runBlocking {
-        println("start")
-        thread {
-            Thread.sleep(500)
-            println("test4")
-        }
-        delay(2000)
-        thread {
-            Thread.sleep(200)
-            println("test5")
-        }
-        doSomethingAsync()
-        thread {
-            Thread.sleep(100)
-            println("test6")
-        }
-        println("end")
-    }
-
-    thread {
-        Thread.sleep(1000)
-        println("test1")
-    }
-    thread {
-        Thread.sleep(1500)
-        println("test2")
-    }
-    thread {
-        Thread.sleep(500)
-        println("test3")
-    }
-    */
+    val forksArray = arrayListOf<BaseFork>().also { fillForksArray(it) }
+    val philosophersArray = arrayListOf<BasePhilosopher>().also { fillPhilosophersArray(it, forksArray) }
+    runDinner(philosophersArray)
 }
 
-suspend fun doSomethingAsync() = coroutineScope {
-    launch {
-        println("async work started...")
-        delay(1200)
-        println("async work done!")
+private fun fillForksArray(forksArray: ArrayList<BaseFork>) {
+    for (index in 1..Constants.N_of_forks) {
+        forksArray.add(BaseFork(index))
     }
 }
+
+private fun fillPhilosophersArray(philosophersArray: ArrayList<BasePhilosopher>, forksArray: ArrayList<BaseFork>) {
+    for (index in 1 until Constants.N) {
+        val forksIndex = (index - 1) * 2
+        philosophersArray.add(BasePhilosopher(index, forksArray[forksIndex], forksArray[forksIndex + 1]))
+    }
+    philosophersArray.add(
+        BasePhilosopher(
+            philosophersArray.size + 1,
+            forksArray[forksArray.size - 2],
+            forksArray[forksArray.size - 1]
+        )
+    )
+}
+
+private fun runDinner(philosophersArray: ArrayList<BasePhilosopher>) {
+    try {
+        runBlocking {
+            val baseRunnerJobsList = arrayListOf<Deferred<Deferred<Unit>>>().also {
+                fillBaseRunnerJobsList(this, it, philosophersArray)
+            }
+            Constants.outputInformation("Dinner started " + System.currentTimeMillis().toString() + " mls")
+            baseRunnerJobsList.forEachIndexed { _, deferred ->
+                deferred.join()
+            }
+            delay(Constants.T_dinner)
+            this.cancel()
+        }
+    } catch (e: CancellationException) {
+        Constants.outputInformation("Dinner was stopped: " + System.currentTimeMillis().toString() + " mls\n$e")
+    }
+}
+
+private fun fillBaseRunnerJobsList(
+    scope: CoroutineScope,
+    jobList: ArrayList<Deferred<Deferred<Unit>>>,
+    philosophersArray: ArrayList<BasePhilosopher>
+) {
+    philosophersArray.forEachIndexed { _, basePhilosopher ->
+        val job = scope.async {
+            val baseRunner = BaseRunner(basePhilosopher)
+            baseRunner.runDinerAsync(scope)
+            baseRunner.runCheckEatAndThinkCountAsync(scope)
+        }
+        jobList.add(job)
+    }
+}
+
+
