@@ -2,7 +2,6 @@ import entities.base.BaseFork
 import entities.base.BasePhilosopher
 import kotlinx.coroutines.*
 import runners.BaseRunner
-import java.lang.invoke.ConstantBootstraps
 
 fun main() {
     val forksArray = arrayListOf<BaseFork>().also { fillForksArray(it) }
@@ -23,6 +22,15 @@ private fun fillPhilosophersArray(philosophersArray: ArrayList<BasePhilosopher>,
     }
 }
 
+private fun decoratedRunDinner(philosophersArray: ArrayList<BasePhilosopher>) {
+    Constants.outputInformation("Dinner started")
+    val dinnerStartTime = System.nanoTime()
+    runDinner(philosophersArray)
+    val dinnerEndTime = System.nanoTime()
+    val dinnerTimeMls = (dinnerEndTime - dinnerStartTime).inMilliseconds()
+    Constants.outputInformation("Dinner time: $dinnerTimeMls")
+}
+
 private fun runDinner(philosophersArray: ArrayList<BasePhilosopher>) {
     try {
         runBlocking {
@@ -32,19 +40,12 @@ private fun runDinner(philosophersArray: ArrayList<BasePhilosopher>) {
             baseRunnerJobsList.forEachIndexed { _, philosopherProcess ->
                 philosopherProcess.join()
             }
+            delay(Constants.T_dinner)
+            
         }
     } catch (e: CancellationException) {
         Constants.outputInformation("Dinner was stopped\n$e")
     }
-}
-
-private fun decoratedRunDinner(philosophersArray: ArrayList<BasePhilosopher>){
-    Constants.outputInformation("Dinner started")
-    val dinnerStartTime = System.nanoTime()
-    runDinner(philosophersArray)
-    val dinnerEndTime = System.nanoTime()
-    val dinnerTimeMls = (dinnerEndTime - dinnerStartTime).inMilliseconds()
-    Constants.outputInformation("Dinner time: $dinnerTimeMls")
 }
 
 private fun fillBaseRunnerJobsList(
@@ -62,7 +63,7 @@ private fun fillBaseRunnerJobsList(
     }
 }
 
-fun Long.inMilliseconds(): Long {
+private fun Long.inMilliseconds(): Long {
     return this / 1000000
 }
 
