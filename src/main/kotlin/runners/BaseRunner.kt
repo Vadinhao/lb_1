@@ -5,7 +5,6 @@ import entities.base.BasePhilosopher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 class BaseRunner(
     private val philosopher: BasePhilosopher,

@@ -2,12 +2,12 @@ import entities.base.BaseFork
 import entities.base.BasePhilosopher
 import kotlinx.coroutines.*
 import runners.BaseRunner
-import java.awt.SystemColor
+import java.lang.invoke.ConstantBootstraps
 
 fun main() {
     val forksArray = arrayListOf<BaseFork>().also { fillForksArray(it) }
     val philosophersArray = arrayListOf<BasePhilosopher>().also { fillPhilosophersArray(it, forksArray) }
-    runDinner(philosophersArray)
+    decoratedRunDinner(philosophersArray)
 }
 
 private fun fillForksArray(forksArray: ArrayList<BaseFork>) {
@@ -17,17 +17,10 @@ private fun fillForksArray(forksArray: ArrayList<BaseFork>) {
 }
 
 private fun fillPhilosophersArray(philosophersArray: ArrayList<BasePhilosopher>, forksArray: ArrayList<BaseFork>) {
-    for (index in 1 until Constants.N) {
+    for (index in 1..Constants.N) {
         val forksIndex = (index - 1) * 2
         philosophersArray.add(BasePhilosopher(index, forksArray[forksIndex], forksArray[forksIndex + 1]))
     }
-    philosophersArray.add(
-        BasePhilosopher(
-            philosophersArray.size + 1,
-            forksArray[forksArray.size - 2],
-            forksArray[forksArray.size - 1]
-        )
-    )
 }
 
 private fun runDinner(philosophersArray: ArrayList<BasePhilosopher>) {
@@ -36,16 +29,22 @@ private fun runDinner(philosophersArray: ArrayList<BasePhilosopher>) {
             val baseRunnerJobsList = arrayListOf<Deferred<Deferred<Unit>>>().also {
                 fillBaseRunnerJobsList(this, it, philosophersArray)
             }
-            Constants.outputInformation("Dinner started " + System.currentTimeMillis().toString() + " mls")
-            baseRunnerJobsList.forEachIndexed { _, deferred ->
-                deferred.join()
+            baseRunnerJobsList.forEachIndexed { _, philosopherProcess ->
+                philosopherProcess.join()
             }
-            delay(Constants.T_dinner)
-            this.cancel()
         }
     } catch (e: CancellationException) {
-        Constants.outputInformation("Dinner was stopped: " + System.currentTimeMillis().toString() + " mls\n$e")
+        Constants.outputInformation("Dinner was stopped\n$e")
     }
+}
+
+private fun decoratedRunDinner(philosophersArray: ArrayList<BasePhilosopher>){
+    Constants.outputInformation("Dinner started")
+    val dinnerStartTime = System.nanoTime()
+    runDinner(philosophersArray)
+    val dinnerEndTime = System.nanoTime()
+    val dinnerTimeMls = (dinnerEndTime - dinnerStartTime).inMilliseconds()
+    Constants.outputInformation("Dinner time: $dinnerTimeMls")
 }
 
 private fun fillBaseRunnerJobsList(
@@ -61,6 +60,10 @@ private fun fillBaseRunnerJobsList(
         }
         jobList.add(job)
     }
+}
+
+fun Long.inMilliseconds(): Long {
+    return this / 1000000
 }
 
 

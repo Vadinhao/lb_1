@@ -1,15 +1,11 @@
 package entities.base
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 class BasePhilosopher(
     val id: Int,
-    var leftFork: BaseFork,
-    var rightFork: BaseFork
+    private var leftFork: BaseFork,
+    private var rightFork: BaseFork
 ) {
 
     private var eatCount = 0
@@ -20,8 +16,8 @@ class BasePhilosopher(
     fun getThinkCount() = eatCount
 
     suspend fun eat(): Boolean {
-        if (leftFork.getAvailability() && rightFork.getAvailability()) {
-
+        return if (leftFork.getAvailability() && rightFork.getAvailability()) {
+            eatCount++
             leftFork.takeFork()
             rightFork.takeFork()
             Constants.outputInformation("Philosopher #" + id + " start eating with forks: l = " + leftFork.id + " " + leftFork.getAvailability() + " " + " r = " + rightFork.id + " " + rightFork.getAvailability())
@@ -29,21 +25,17 @@ class BasePhilosopher(
             leftFork.putFork()
             rightFork.putFork()
             Constants.outputInformation("Philosopher #" + id + " end eating with forks: l = " + leftFork.id + " " + leftFork.getAvailability() + " " + " r = " + rightFork.id + " " + rightFork.getAvailability())
-
-            eatCount++
-
-            return true
+            true
         } else {
-            return false
+            false
         }
     }
 
     suspend fun think() {
+        thinkCount++
         Constants.outputInformation("Philosopher #$id start thinking")
         delay(Constants.t_think)
         Constants.outputInformation("Philosopher #$id end thinking")
-
-        thinkCount++
     }
 
 }
